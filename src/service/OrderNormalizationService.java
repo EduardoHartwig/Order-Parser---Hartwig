@@ -17,14 +17,11 @@ public class OrderNormalizationService {
             try {
                 OrderLineParser.OrderLine orderLine = OrderLineParser.parse(line);
 
-                // Get or create user
                 User user = userMap.computeIfAbsent(orderLine.userId, 
                     id -> new User(id, orderLine.name));
 
-                // Create unique order key
                 String orderKey = orderLine.userId + "-" + orderLine.orderId;
 
-                // Get or create order
                 Order order = orderMap.computeIfAbsent(orderKey, 
                     key -> {
                         Order newOrder = new Order(orderLine.orderId, orderLine.date);
@@ -32,7 +29,6 @@ public class OrderNormalizationService {
                         return newOrder;
                     });
 
-                // Add product to order
                 Product product = new Product(orderLine.productId, orderLine.value);
                 order.addProduct(product);
 

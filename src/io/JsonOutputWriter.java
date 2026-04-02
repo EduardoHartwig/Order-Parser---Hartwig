@@ -7,12 +7,13 @@ import domain.User;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class JsonOutputWriter {
 
     public static void writeToFile(String filePath, List<User> users) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, StandardCharsets.UTF_8))) {
             String json = buildJsonString(users);
             writer.write(json);
         }

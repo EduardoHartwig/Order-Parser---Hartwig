@@ -5,87 +5,127 @@ import service.OrderNormalizationService;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.List;
 
 public class Main {
+
+    public static String removeAccents(String text) {
+        if (text == null) return null;
+        
+        String nfkdForm = Normalizer.normalize(text, Normalizer.Form.NFKD);
+        
+        return nfkdForm.replaceAll("[^\\p{ASCII}]", "");
+    }
+    
     public static void main(String[] args) {
         try {
-            // Definir caminhos das pastas de entrada e saída
-            String inputDirPath = "resources/input";
-            String outputDirPath = "resources/output";
-
+            System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+            System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+            
             System.out.println("========================================");
             System.out.println("   Order Parser - Desafio Hartwig");
             System.out.println("========================================");
             System.out.println();
 
-            // Validar pastas
-            File inputDir = new File(inputDirPath);
-            File outputDir = new File(outputDirPath);
+            String inputPath;
+            String outputDirPath;
+            File[] txtFiles;
 
-            if (!inputDir.exists() || !inputDir.isDirectory()) {
-                System.err.println("Erro: Pasta de entrada '" + inputDirPath + "' não encontrada!");
-                System.exit(1);
+            if (args.length > 0) {
+                inputPath = args[0];
+                File inputFile = new File(inputPath);
+
+                if (!inputFile.exists()) {
+                    System.err.println(removeAccents("Erro: Caminho '" + inputPath + "' não encontrado!"));
+                    System.exit(1);
+                }
+
+                if (inputFile.isFile() && inputFile.getName().toLowerCase().endsWith(".txt")) {
+                    outputDirPath = inputFile.getParent();
+                    txtFiles = new File[]{inputFile};
+                }
+                else if (inputFile.isDirectory()) {
+                    outputDirPath = inputPath;
+                    File[] files = inputFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".txt"));
+                    txtFiles = (files != null) ? files : new File[0];
+                }
+                else {
+                    System.err.println(removeAccents("Erro: O arquivo deve ter extensão .txt!"));
+                    System.exit(1);
+                    return;
+                }
+            }
+            else {
+                String inputDirPath = "resources/input";
+                outputDirPath = "resources/output";
+
+                File inputDir = new File(inputDirPath);
+                File outputDir = new File(outputDirPath);
+
+                if (!inputDir.exists() || !inputDir.isDirectory()) {
+                    System.err.println(removeAccents("Erro: Pasta de entrada '" + inputDirPath + "' não encontrada!"));
+                    System.exit(1);
+                }
+
+                if (!outputDir.exists() || !outputDir.isDirectory()) {
+                    System.err.println(removeAccents("Erro: Pasta de saida '" + outputDirPath + "' não encontrada!"));
+                    System.exit(1);
+                }
+
+                File[] files = inputDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".txt"));
+                txtFiles = (files != null) ? files : new File[0];
             }
 
-            if (!outputDir.exists() || !outputDir.isDirectory()) {
-                System.err.println("Erro: Pasta de saída '" + outputDirPath + "' não encontrada!");
-                System.exit(1);
-            }
-
-            // Obter lista de arquivos .txt da pasta de entrada
-            File[] txtFiles = inputDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".txt"));
-
-            if (txtFiles == null || txtFiles.length == 0) {
-                System.out.println("Nenhum arquivo .txt encontrado na pasta de entrada!");
+            if (txtFiles.length == 0) {
+                System.out.println(removeAccents("Nenhum arquivo .txt encontrado na pasta de entrada!"));
                 System.exit(0);
             }
 
-            System.out.println("Processando " + txtFiles.length + " arquivo(s)...\n");
+            System.out.println(removeAccents("Processando " + txtFiles.length + " arquivo(s)...\n"));
 
             int processedCount = 0;
             for (File txtFile : txtFiles) {
                 try {
                     String inputFile = txtFile.getAbsolutePath();
                     String fileName = txtFile.getName();
-                    String jsonFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".json";
+                    String jsonFileName = fileName.substring(0, fileName.lastIndexOf(".")) + " - Arquivo de saída.json";
+                    File outputDir = new File(outputDirPath);
                     String outputFile = outputDir.getAbsolutePath() + File.separator + jsonFileName;
 
-                    System.out.println("Processando: " + fileName);
+                    System.out.println(removeAccents("Processando: " + fileName));
 
-                    // Ler arquivo de entrada
                     List<String> lines = FileInputReader.readFile(inputFile);
-                    System.out.println("  ✓ " + lines.size() + " linhas lidas.");
+                    System.out.println(removeAccents("  ✓ " + lines.size() + " linhas lidas."));
 
-                    // Normalizar pedidos
                     List<User> users = OrderNormalizationService.normalizeOrders(lines);
-                    System.out.println("  ✓ " + users.size() + " usuário(s) processado(s).");
+                    System.out.println(removeAccents("  ✓ " + users.size() + " usuario(s) processado(s)."));
 
-                    // Calcular total de pedidos
                     int totalOrders = users.stream().mapToInt(u -> u.getOrders().size()).sum();
-                    System.out.println("  ✓ " + totalOrders + " pedido(s) no total.");
+                    System.out.println(removeAccents("  ✓ " + totalOrders + " pedido(s) no total."));
 
-                    // Escrever arquivo JSON de saída
                     JsonOutputWriter.writeToFile(outputFile, users);
-                    System.out.println("  ✓ JSON gerado: " + jsonFileName);
+                    System.out.println(removeAccents("  ✓ JSON gerado: " + jsonFileName));
                     System.out.println();
 
                     processedCount++;
 
                 } catch (IOException e) {
-                    System.err.println("  ✗ Erro ao processar arquivo: " + e.getMessage());
+                    System.err.println(removeAccents("  ✗ Erro ao processar arquivo: " + e.getMessage()));
                 } catch (Exception e) {
-                    System.err.println("  ✗ Erro geral: " + e.getMessage());
+                    System.err.println(removeAccents("  ✗ Erro geral: " + e.getMessage()));
                 }
             }
 
             System.out.println("========================================");
-            System.out.println("   Processamento concluído!");
-            System.out.println("   " + processedCount + " arquivo(s) processado(s)");
+            System.out.println(removeAccents("   Processamento concluido!"));
+            System.out.println(removeAccents("   " + processedCount + " arquivo(s) processado(s)"));
             System.out.println("========================================");
 
         } catch (Exception e) {
-            System.err.println("Erro: " + e.getMessage());
+            System.err.println(removeAccents("Erro: " + e.getMessage()));
             System.exit(1);
         }
     }
