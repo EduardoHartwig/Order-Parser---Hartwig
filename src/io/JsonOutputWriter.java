@@ -5,72 +5,60 @@ import domain.Product;
 import domain.User;
 
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.StringJoiner;
 
-public class JsonOutputWriter {
+public final class JsonOutputWriter implements OutputWriter {
 
-    public static void writeToFile(String filePath, List<User> users) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, StandardCharsets.UTF_8))) {
+    @Override
+    public void writeToFile(String filePath, List<User> users) throws IOException {
+        try (BufferedWriter writer = Files.newBufferedWriter(Path.of(filePath), StandardCharsets.UTF_8)) {
             String json = buildJsonString(users);
             writer.write(json);
         }
     }
 
-    public static String buildJsonString(List<User> users) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[\n");
+    public String buildJsonString(List<User> users) {
+        StringJoiner usersJoiner = new StringJoiner(",\n", "[\n", "\n]");
 
-        for (int i = 0; i < users.size(); i++) {
-            User user = users.get(i);
-            sb.append("  {\n");
-            sb.append("    \"user_id\": ").append(user.getUserId()).append(",\n");
-            sb.append("    \"name\": \"").append(escapeJsonString(user.getName())).append("\",\n");
-            sb.append("    \"orders\": [\n");
+        for (User user : users) {
+            StringJoiner ordersJoiner = new StringJoiner(",\n");
 
-            List<Order> orders = user.getOrders();
-            for (int j = 0; j < orders.size(); j++) {
-                Order order = orders.get(j);
-                sb.append("      {\n");
-                sb.append("        \"order_id\": ").append(order.getOrderId()).append(",\n");
-                sb.append("        \"total\": \"").append(order.getTotal()).append("\",\n");
-                sb.append("        \"date\": \"").append(order.getDate()).append("\",\n");
-                sb.append("        \"products\": [\n");
+            for (Order order : user.getOrders()) {
+                StringJoiner productsJoiner = new StringJoiner(",\n");
 
-                List<Product> products = order.getProducts();
-                for (int k = 0; k < products.size(); k++) {
-                    Product product = products.get(k);
-                    sb.append("          { \"product_id\": ").append(product.getProductId())
-                            .append(", \"value\": \"").append(product.getValue()).append("\" }");
-                    if (k < products.size() - 1) {
-                        sb.append(",");
-                    }
-                    sb.append("\n");
+                for (Product product : order.getProducts()) {
+                    productsJoiner.add("          { \"product_id\": " + product.getProductId()
+                            + ", \"value\": \"" + product.getValue().toPlainString() + "\" }");
                 }
 
-                sb.append("        ]\n");
-                sb.append("      }");
-                if (j < orders.size() - 1) {
-                    sb.append(",");
-                }
-                sb.append("\n");
+                ordersJoiner.add("      {\n"
+                        + "        \"order_id\": " + order.getOrderId() + ",\n"
+                        + "        \"total\": \"" + order.getTotal().toPlainString() + "\",\n"
+                        + "        \"date\": \"" + order.getDate() + "\",\n"
+                        + "        \"products\": [\n"
+                        + productsJoiner + "\n"
+                        + "        ]\n"
+                        + "      }");
             }
 
-            sb.append("    ]\n");
-            sb.append("  }");
-            if (i < users.size() - 1) {
-                sb.append(",");
-            }
-            sb.append("\n");
+            usersJoiner.add("  {\n"
+                    + "    \"user_id\": " + user.getUserId() + ",\n"
+                    + "    \"name\": \"" + escapeJsonString(user.getName()) + "\",\n"
+                    + "    \"orders\": [\n"
+                    + ordersJoiner + "\n"
+                    + "    ]\n"
+                    + "  }");
         }
 
-        sb.append("]");
-        return sb.toString();
+        return usersJoiner.toString();
     }
 
-    private static String escapeJsonString(String str) {
+    private String escapeJsonString(String str) {
         return str.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\b", "\\b")
@@ -78,5 +66,10 @@ public class JsonOutputWriter {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    @Override
+    public String getFileExtension() {
+        return ".json";
     }
 }

@@ -1,12 +1,15 @@
 package domain;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Order {
-    private int orderId;
-    private String date;
-    private List<Product> products;
+    private final int orderId;
+    private final String date;
+    private final List<Product> products;
 
     public Order(int orderId, String date) {
         this.orderId = orderId;
@@ -23,18 +26,18 @@ public class Order {
     }
 
     public List<Product> getProducts() {
-        return products;
+        return Collections.unmodifiableList(products);
     }
 
     public void addProduct(Product product) {
         this.products.add(product);
     }
 
-    public String getTotal() {
-        double total = 0.0;
+    public BigDecimal getTotal() {
+        BigDecimal total = BigDecimal.ZERO;
         for (Product product : products) {
-            total += Double.parseDouble(product.getValue());
+            total = total.add(product.getValue());
         }
-        return String.format(java.util.Locale.US, "%.2f", total);
+        return total.setScale(2, RoundingMode.HALF_UP);
     }
 }

@@ -3,41 +3,54 @@ package service;
 import domain.Order;
 import domain.Product;
 import domain.User;
-import parser.OrderLineParser;
+import parser.LineParser;
+import parser.OrderLine;
 
 import java.util.*;
 
-public class OrderNormalizationService {
+public class OrderNormalizationService implements NormalizationService {
 
-    public static List<User> normalizeOrders(List<String> lines) {
+    private final LineParser<OrderLine> lineParser;
+    private final ProcessingLogger logger;
+
+    public OrderNormalizationService(LineParser<OrderLine> lineParser, ProcessingLogger logger) {
+        this.lineParser = lineParser;
+        this.logger = logger;
+    }
+
+    @Override
+    public List<User> normalizeOrders(List<String> lines) {
         Map<Integer, User> userMap = new LinkedHashMap<>();
         Map<String, Order> orderMap = new HashMap<>();
 
-        for (String line : lines) {
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
             try {
-                OrderLineParser.OrderLine orderLine = OrderLineParser.parse(line);
+                OrderLine orderLine = lineParser.parse(line);
 
-                User user = userMap.computeIfAbsent(orderLine.userId, 
-                    id -> new User(id, orderLine.name));
+                User user = userMap.computeIfAbsent(orderLine.userId(), 
+                    id -> new User(id, orderLine.name()));
 
-                String orderKey = orderLine.userId + "-" + orderLine.orderId;
+                String orderKey = orderLine.userId() + "-" + orderLine.orderId();
 
                 Order order = orderMap.computeIfAbsent(orderKey, 
                     key -> {
-                        Order newOrder = new Order(orderLine.orderId, orderLine.date);
+                        Order newOrder = new Order(orderLine.orderId(), orderLine.date());
                         user.addOrder(newOrder);
                         return newOrder;
                     });
 
-                Product product = new Product(orderLine.productId, orderLine.value);
+                Product product = new Product(orderLine.productId(), orderLine.value());
                 order.addProduct(product);
 
             } catch (Exception e) {
-                System.err.println("Erro ao processar linha: " + line);
-                System.err.println("Detalhes: " + e.getMessage());
+                logger.error("Erro ao processar linha " + (i + 1) + ": " + line);
+                logger.error("Detalhes: " + e.getMessage());
             }
         }
 
-        return new ArrayList<>(userMap.values());
+        List<User> users = new ArrayList<>(userMap.values());
+        users.sort(Comparator.comparingInt(User::getUserId));
+        return users;
     }
 }

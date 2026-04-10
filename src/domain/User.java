@@ -1,12 +1,13 @@
 package domain;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class User {
-    private int userId;
-    private String name;
-    private List<Order> orders;
+    private final int userId;
+    private final String name;
+    private final List<Order> orders;
 
     public User(int userId, String name) {
         this.userId = userId;
@@ -23,7 +24,7 @@ public class User {
     }
 
     public List<Order> getOrders() {
-        return orders;
+        return Collections.unmodifiableList(orders);
     }
 
     public void addOrder(Order order) {

@@ -1,10 +1,12 @@
 package domain;
 
-public class Product {
-    private int productId;
-    private String value;
+import java.math.BigDecimal;
 
-    public Product(int productId, String value) {
+public class Product {
+    private final int productId;
+    private final BigDecimal value;
+
+    public Product(int productId, BigDecimal value) {
         this.productId = productId;
         this.value = value;
     }
@@ -13,7 +15,7 @@ public class Product {
         return productId;
     }
 
-    public String getValue() {
+    public BigDecimal getValue() {
         return value;
     }
 }
